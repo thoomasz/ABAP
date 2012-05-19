@@ -1,0 +1,691 @@
+<?xml version="1.0" encoding="utf-16"?>
+<nugget name="C:/Projects/NUGG_ZJSON.nugg">
+ <DTEL ROLLNAME="ZSTRING" DDLANGUAGE="F" ROUTPUTLEN="000000" HEADLEN="25" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DDTEXT="String" REPTEXT="String" SCRTEXT_S="String" SCRTEXT_M="String" SCRTEXT_L="String" AUTHCLASS="00" AS4USER="JFLEBOULAIRE" AS4DATE="20070824" AS4TIME="080516" DTELMASTER="F" DATATYPE="STRG" LENG="000000" DECIMALS="000000" OUTPUTLEN="000000">
+  <tpara/>
+ </DTEL>
+ <TABL TABNAME="ZGS_0004" DDLANGUAGE="F" TABCLASS="INTTAB" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" DDTEXT="Structure pour JSON OBJET" AUTHCLASS="00" AS4USER="QDUBOIS" AS4DATE="20100127" AS4TIME="184647" PROZPUFF="000" EXCLASS="4">
+  <dd09l AS4VERS="0000" SCHFELDANZ="000" AS4DATE="00000000" AS4TIME="000000"/>
+  <dd03p TABNAME="ZGS_0004" FIELDNAME="ID" DDLANGUAGE="F" POSITION="0001" ROLLNAME="ZSTRING" ADMINFIELD="0" INTTYPE="g" INTLEN="000008" ROUTPUTLEN="000000" HEADLEN="25" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="F" DATATYPE="STRG" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  STRGE" MASKLEN="0000" DDTEXT="String" REPTEXT="String" SCRTEXT_S="String" SCRTEXT_M="String" SCRTEXT_L="String" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
+  <dd03p TABNAME="ZGS_0004" FIELDNAME="TX" DDLANGUAGE="F" POSITION="0002" ROLLNAME="ZSTRING" ADMINFIELD="0" INTTYPE="g" INTLEN="000008" ROUTPUTLEN="000000" HEADLEN="25" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="F" DATATYPE="STRG" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  STRGE" MASKLEN="0000" DDTEXT="String" REPTEXT="String" SCRTEXT_S="String" SCRTEXT_M="String" SCRTEXT_L="String" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
+ </TABL>
+ <TTYP TYPENAME="ZGY_0004" DDLANGUAGE="F" ROWTYPE="ZGS_0004" ROWKIND="S" DATATYPE="STRU" LENG="000000" DECIMALS="000000" ACCESSMODE="T" KEYDEF="D" KEYKIND="N" KEYFDCOUNT="0000" AS4USER="GUICHARDJ" AS4DATE="20100127" AS4TIME="184649" DDTEXT="Table JSON OBJET" TYPELEN="000016" CTLENG="000000" CTDECIMALS="000000" OCCURS="00000"/>
+ <FUGR SPRAS="F" AREA="ZJSON" AREAT="groupe de fonction JSON">
+  <mainprogram NAME="SAPLZJSON" VARCL="X" DBAPL="S" DBNA="D$" SUBC="F" APPL="S" CNAM="QDUBOIS" CDAT="20070427" UNAM="QDUBOIS" UDAT="20070827" VERN="000001" RMAND="100" RLOAD="F" FIXPT="X" SDATE="20091202" STIME="174944" IDATE="20070827" ITIME="124755" LDBNAME="D$S" UCCHECK="X">
+   <textPool/>
+   <source>*******************************************************************
+*   System-defined Include-files.                                 *
+*******************************************************************
+  INCLUDE LZJSONTOP.                         &quot; Global Data
+  INCLUDE LZJSONUXX.                         &quot; Function Modules
+
+*******************************************************************
+*   User-defined Include-files (if necessary).                    *
+*******************************************************************
+* INCLUDE LZJSONF...                         &quot; Subprograms
+* INCLUDE LZJSONO...                         &quot; PBO-Modules
+* INCLUDE LZJSONI...                         &quot; PAI-Modules</source>
+  </mainprogram>
+  <includeprograms>
+   <include NAME="LZJSONTOP" VARCL="X" DBAPL="S" DBNA="D$" SUBC="I" APPL="S" CNAM="QDUBOIS" CDAT="20070427" UNAM="JFLEBOULAIRE" UDAT="20071130" VERN="000002" RMAND="100" RLOAD="F" FIXPT="X" SDATE="20071130" STIME="115933" IDATE="20071130" ITIME="115933" LDBNAME="D$S" UCCHECK="X">
+    <include_source>FUNCTION-POOL ZJSON.                        &quot;MESSAGE-ID ..
+
+TYPES:BEGIN OF tab_struct,
+        fieldname TYPE fieldname,
+        type      TYPE c,
+      END OF tab_struct.</include_source>
+   </include>
+  </includeprograms>
+  <functionmodules>
+   <functionmodule NAME="Z_JSON_OUT" STEXT="ABAP to JSON">
+    <importing PARAMETER="TREE" OPTIONAL="X" REFERENCE="X" TYP="C"/>
+    <importing PARAMETER="STRUC" OPTIONAL="X" REFERENCE="X"/>
+    <exporting PARAMETER="JSON" TYP="STRING"/>
+    <tables PARAMETER="ITAB" OPTIONAL="X" TYP="STANDARD TABLE"/>
+    <tables PARAMETER="ISTRUC" OPTIONAL="X" TYP="ZGY_0004"/>
+    <documentation PARAMETER="TREE" KIND="P" INDEX=" 001"/>
+    <documentation PARAMETER="STRUC" KIND="P" INDEX=" 002"/>
+    <documentation PARAMETER="JSON" KIND="P" STEXT="JSON String" INDEX=" 003"/>
+    <documentation PARAMETER="ITAB" KIND="P" INDEX=" 004"/>
+    <documentation PARAMETER="ISTRUC" KIND="P" STEXT="Table JSON OBJET" INDEX=" 005"/>
+    <fm_source_new>TYPE-POOLS: sydes.
+
+  DATA : i_structfield TYPE tab_struct OCCURS 0.
+  DATA : w_lines TYPE i.
+
+  IF itab IS SUPPLIED.
+    PERFORM get_fieldname_table TABLES itab i_structfield.
+    DESCRIBE TABLE i_structfield LINES w_lines.
+    IF w_lines EQ 0.
+      PERFORM write_array_to_json TABLES itab USING tree CHANGING json.
+    ELSE.
+      PERFORM write_itab_to_json TABLES itab i_structfield USING tree CHANGING json.
+    ENDIF.
+  ELSEIF struc IS SUPPLIED.
+    PERFORM get_fieldname_struc TABLES i_structfield USING struc.
+    IF i_structfield[] IS INITIAL.
+      PERFORM write_field_to_json USING struc CHANGING json.
+    ELSE.
+      PERFORM write_struc_to_json TABLES i_structfield USING struc CHANGING json.
+    ENDIF.
+  ELSEIF istruc IS SUPPLIED.
+    PERFORM write_istruc_to_json TABLES istruc CHANGING json.
+  ENDIF.
+
+
+*&amp;---------------------------------------------------------------------*
+FORM write_array_to_json TABLES p_itab USING p_tree CHANGING p_json.
+
+  DATA w_dref_str TYPE REF TO data.
+  DATA w_data TYPE string.
+  DATA w_json_elem TYPE string.
+  DATA w_json_lines TYPE string.
+  DATA w_field TYPE string.
+  DATA w_tab_struct TYPE  tab_struct.
+  DATA w_field_table TYPE string.
+
+  FIELD-SYMBOLS &lt;wa&gt; TYPE ANY.
+  FIELD-SYMBOLS &lt;field&gt; TYPE ANY.
+
+  CLEAR p_json.
+  CONCATENATE p_json &apos;[&apos; INTO p_json.
+  CREATE DATA w_dref_str LIKE p_itab.
+  ASSIGN w_dref_str-&gt;* TO &lt;wa&gt;.
+  LOOP AT p_itab INTO &lt;wa&gt;.
+    CLEAR w_json_elem.
+    CONCATENATE w_json_lines &apos;,&apos; INTO w_json_lines.
+    CLEAR w_data.
+    w_field = &apos;&lt;wa&gt;&apos;.
+    ASSIGN (w_field) TO &lt;field&gt;.
+    CALL FUNCTION &apos;Z_JSON_OUT&apos;
+      EXPORTING
+        struc = &lt;field&gt;
+      IMPORTING
+        json  = w_data.
+    CONCATENATE w_json_elem &apos;,&apos; w_data INTO w_json_elem.
+    SHIFT w_json_elem.
+    CONCATENATE w_json_lines w_json_elem INTO w_json_lines.
+  ENDLOOP.
+  SHIFT w_json_lines.
+  CONCATENATE p_json w_json_lines &apos;]&apos; INTO p_json.
+
+ENDFORM.                    &quot;write_array_to_json
+
+*&amp;---------------------------------------------------------------------*
+FORM write_itab_to_json TABLES p_itab p_istruct USING p_tree CHANGING p_json.
+
+  DATA w_dref_str TYPE REF TO data.
+  DATA w_data TYPE string.
+  DATA w_json_elem TYPE string.
+  DATA w_json_lines TYPE string.
+  DATA w_field TYPE string.
+  DATA w_struct TYPE tab_struct.
+  DATA w_field_table TYPE string.
+
+  FIELD-SYMBOLS &lt;wa&gt; TYPE ANY.
+  FIELD-SYMBOLS &lt;field&gt; TYPE ANY.
+  FIELD-SYMBOLS &lt;table&gt; TYPE STANDARD TABLE.
+
+  CLEAR p_json.
+  CONCATENATE p_json &apos;[&apos; INTO p_json.
+  CREATE DATA w_dref_str LIKE p_itab.
+  ASSIGN w_dref_str-&gt;* TO &lt;wa&gt;.
+  LOOP AT p_itab INTO &lt;wa&gt;.
+    CLEAR w_json_elem.
+    CONCATENATE w_json_lines &apos;,{&apos; INTO w_json_lines.
+    LOOP AT p_istruct INTO w_struct.
+      CASE w_struct-type.
+        WHEN &apos;T&apos;.
+          CLEAR w_data.
+          CONCATENATE &apos;&lt;wa&gt;-&apos; w_struct-fieldname INTO w_field.
+          ASSIGN (w_field) TO &lt;table&gt;.
+          w_field_table =  w_struct-fieldname.
+          IF p_tree IS NOT INITIAL AND &lt;table&gt;[] IS NOT INITIAL.
+            w_field_table = &apos;children&apos;.
+          ENDIF.
+          CALL FUNCTION &apos;Z_JSON_OUT&apos;
+            EXPORTING
+              tree = p_tree
+            IMPORTING
+              json = w_data
+            TABLES
+              itab = &lt;table&gt;.
+          CONCATENATE w_json_elem &apos;,&apos; &apos;&quot;&apos;  w_field_table  &apos;&quot;&apos; &apos;:&apos;  w_data  INTO w_json_elem.
+        WHEN OTHERS.
+          CLEAR w_data.
+          CONCATENATE &apos;&lt;wa&gt;-&apos; w_struct-fieldname INTO w_field.
+          ASSIGN (w_field) TO &lt;field&gt;.
+          CALL FUNCTION &apos;Z_JSON_OUT&apos;
+            EXPORTING
+              struc = &lt;field&gt;
+            IMPORTING
+              json  = w_data.
+          CONCATENATE w_json_elem &apos;,&apos; &apos;&quot;&apos; w_struct-fieldname &apos;&quot;&apos; &apos;:&apos; w_data INTO w_json_elem.
+      ENDCASE.
+    ENDLOOP.
+    SHIFT w_json_elem.
+    CONCATENATE w_json_lines w_json_elem &apos;}&apos; INTO w_json_lines.
+  ENDLOOP.
+  SHIFT w_json_lines.
+  CONCATENATE p_json w_json_lines &apos;]&apos; INTO p_json.
+
+ENDFORM.                    &quot;write_itab_to_json
+
+*&amp;---------------------------------------------------------------------*
+FORM write_field_to_json USING p_field CHANGING p_json.
+
+  DATA w_field TYPE string.
+
+  w_field  = p_field.
+
+  CALL FUNCTION &apos;Z_JSON_FORMATER_VALUE&apos;
+    CHANGING
+      str = w_field.
+
+  CONCATENATE &apos;&quot;&apos; w_field &apos;&quot;&apos; INTO p_json.
+
+ENDFORM.                    &quot;write_struc_to_json
+
+*&amp;---------------------------------------------------------------------*
+FORM write_struc_to_json TABLES p_istruct USING p_struc CHANGING p_json.
+
+  DATA w_data TYPE string.
+  DATA w_json_elem TYPE string.
+  DATA w_field TYPE string.
+  DATA w_struct TYPE tab_struct.
+  DATA w_field_table TYPE string.
+
+  FIELD-SYMBOLS &lt;field&gt; TYPE ANY.
+  FIELD-SYMBOLS &lt;table&gt; TYPE STANDARD TABLE.
+
+  LOOP AT p_istruct INTO w_struct.
+    CASE w_struct-type.
+      WHEN &apos;T&apos;.
+        CLEAR w_data.
+        CONCATENATE &apos;p_struc-&apos; w_struct-fieldname INTO w_field.
+        ASSIGN (w_field) TO &lt;table&gt;.
+        w_field_table = w_struct-fieldname.
+        CALL FUNCTION &apos;Z_JSON_OUT&apos;
+          IMPORTING
+            json = w_data
+          TABLES
+            itab = &lt;table&gt;.
+        CONCATENATE w_json_elem &apos;,&apos; &apos;&quot;&apos;  w_field_table  &apos;&quot;&apos; &apos;:&apos;  w_data  INTO w_json_elem.
+      WHEN OTHERS.
+        CLEAR w_data.
+        CONCATENATE &apos;p_struc-&apos; w_struct-fieldname INTO w_field.
+        ASSIGN (w_field) TO &lt;field&gt;.
+        CALL FUNCTION &apos;Z_JSON_OUT&apos;
+          EXPORTING
+            struc = &lt;field&gt;
+          IMPORTING
+            json  = w_data.
+        CONCATENATE w_json_elem &apos;,&apos; &apos;&quot;&apos; w_struct-fieldname &apos;&quot;&apos; &apos;:&apos; w_data INTO w_json_elem.
+    ENDCASE.
+  ENDLOOP.
+  SHIFT w_json_elem.
+  CONCATENATE &apos;{&apos; w_json_elem &apos;}&apos; INTO p_json.
+
+ENDFORM.                    &quot;write_struc_to_json
+
+
+*----------------------------------------------------------------------*
+FORM get_fieldname_struc TABLES p_istructfield USING p_struc.
+
+  DATA w_dref_str TYPE REF TO data.
+  DATA i_table_desc TYPE sydes_desc.
+  DATA wa_names TYPE sydes_nameinfo.
+  DATA wa_types TYPE sydes_typeinfo.
+  DATA w_tab_struct TYPE tab_struct.
+  DATA wa_names_continue TYPE sydes_nameinfo.
+  DATA w_from TYPE i.
+  DATA w_to TYPE i.
+
+  FIELD-SYMBOLS &lt;struc&gt; TYPE ANY.
+
+  CREATE DATA w_dref_str LIKE p_struc.
+  ASSIGN w_dref_str-&gt;* TO &lt;struc&gt;.
+  DESCRIBE FIELD &lt;struc&gt; INTO i_table_desc.
+  READ TABLE i_table_desc-types INTO wa_types INDEX 1.
+  IF wa_types-table_kind EQ &apos;T&apos;.
+    READ TABLE i_table_desc-types INTO wa_types INDEX wa_types-from.
+  ENDIF.
+  w_from = wa_types-from.
+  w_to = wa_types-to.
+  LOOP AT i_table_desc-types INTO wa_types FROM w_from TO w_to.
+    CLEAR p_istructfield.
+    CHECK wa_types-idx_name GT 0.
+    READ TABLE i_table_desc-names INTO wa_names INDEX wa_types-idx_name.
+    MOVE wa_names-name TO w_tab_struct-fieldname.
+*   ADE - Le nom du champ peut être sur 2 lignes
+    IF wa_names-continue EQ &apos;*&apos;.
+      CLEAR wa_names_continue.
+      wa_types-idx_name = wa_types-idx_name + 1.
+      READ TABLE i_table_desc-names INTO wa_names_continue INDEX wa_types-idx_name.
+      CONCATENATE w_tab_struct-fieldname wa_names_continue-name INTO w_tab_struct-fieldname.
+    ENDIF.
+
+    MOVE wa_types-table_kind TO w_tab_struct-type.
+    APPEND w_tab_struct TO p_istructfield.
+  ENDLOOP.
+
+ENDFORM.                    &quot;get_fieldname_struc
+
+
+*&amp;---------------------------------------------------------------------*
+FORM get_fieldname_table TABLES p_itab p_istructfield.
+
+  DATA w_dref_str TYPE REF TO data.
+  DATA i_table_desc TYPE sydes_desc.
+  DATA wa_names TYPE sydes_nameinfo.
+  DATA wa_types TYPE sydes_typeinfo.
+  DATA w_tab_struct TYPE tab_struct.
+  DATA w_fieldname TYPE fieldname.
+  DATA w_index TYPE i.
+
+
+  FIELD-SYMBOLS &lt;table&gt; TYPE ANY.
+
+  CREATE DATA w_dref_str LIKE p_itab.
+  ASSIGN w_dref_str-&gt;* TO &lt;table&gt;.
+  DESCRIBE FIELD &lt;table&gt; INTO i_table_desc.
+  LOOP AT i_table_desc-types INTO wa_types.
+    CLEAR p_istructfield.
+    CHECK wa_types-idx_name GT 0 AND wa_types-back EQ 1.
+    READ TABLE i_table_desc-names INTO wa_names INDEX wa_types-idx_name.
+
+    MOVE wa_names-name TO w_tab_struct-fieldname.
+* si le champs fait plus de 30 caracteres
+    IF wa_names-continue EQ &apos;*&apos;.
+      w_fieldname = wa_names-name.
+      w_index = wa_types-idx_name + 1.
+      READ TABLE i_table_desc-names INTO wa_names INDEX w_index.
+      CONCATENATE w_fieldname wa_names-name INTO w_tab_struct-fieldname.
+    ENDIF.
+*
+    MOVE wa_types-table_kind TO w_tab_struct-type.
+    APPEND w_tab_struct TO p_istructfield.
+    CLEAR w_fieldname.
+  ENDLOOP.
+
+ENDFORM.                    &quot;get_fieldname_table
+
+
+*&amp;---------------------------------------------------------------------*
+FORM write_istruc_to_json TABLES p_istruc CHANGING p_json.
+
+  DATA w_data TYPE string.
+  DATA w_json_elem TYPE string.
+  DATA w_istruc TYPE zgs_0004.
+
+  LOOP AT p_istruc INTO w_istruc.
+    CLEAR w_data.
+    CALL FUNCTION &apos;Z_JSON_OUT&apos;
+      EXPORTING
+        struc = w_istruc-tx
+      IMPORTING
+        json  = w_data.
+    CONCATENATE w_json_elem &apos;,&apos; &apos;&quot;&apos; w_istruc-id &apos;&quot;&apos; &apos;:&apos; w_data INTO w_json_elem.
+  ENDLOOP.
+  SHIFT w_json_elem.
+  CONCATENATE &apos;{&apos; w_json_elem &apos;}&apos; INTO p_json.
+
+ENDFORM.                    &quot;write_struc_to_json</fm_source_new>
+   </functionmodule>
+   <functionmodule NAME="Z_JSON_IN" STEXT="JSON to ABAP iTab">
+    <importing PARAMETER="JSON" REFERENCE="X" TYP="STRING"/>
+    <exporting PARAMETER="STRUC" REFERENCE="X"/>
+    <tables PARAMETER="ITAB" OPTIONAL="X" TYP="STANDARD TABLE"/>
+    <documentation PARAMETER="JSON" KIND="P" INDEX=" 001"/>
+    <documentation PARAMETER="STRUC" KIND="P" INDEX=" 002"/>
+    <documentation PARAMETER="ITAB" KIND="P" INDEX=" 003"/>
+    <fm_source_new>TYPE-POOLS: sydes.
+
+  DATA w_len TYPE i.
+  w_len = STRLEN( json ).
+  CHECK w_len GT 1.
+  w_len = w_len - 1.
+  IF json(1) EQ &apos;{&apos; AND json+w_len(1) EQ &apos;}&apos;.
+    PERFORM json_to_struc USING json CHANGING struc.
+  ELSEIF json(1) EQ &apos;[&apos; AND json+w_len(1) EQ &apos;]&apos;.
+    IF json+1(1) EQ &apos;{&apos;.
+      PERFORM json_to_itab TABLES itab USING json.
+    ELSE.
+      PERFORM json_to_array TABLES itab USING json.
+    ENDIF.
+  ELSEIF json(1) EQ &apos;&quot;&apos; AND json+w_len(1) EQ &apos;&quot;&apos;.
+    w_len = w_len - 1.
+    struc = json+1(w_len).
+    CALL FUNCTION &apos;Z_JSON_DEFORMATER_VALUE&apos;
+      CHANGING
+        str = struc.
+  ENDIF.
+
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  json_to_struc
+*&amp;---------------------------------------------------------------------*
+FORM json_to_struc USING p_json CHANGING p_struc.
+
+  DATA w_pos_deb_nom TYPE i.
+  DATA w_pos_fin_nom TYPE i.
+  DATA w_pos_deb_val TYPE i.
+  DATA w_pos_fin_val TYPE i.
+  DATA w_lenfield TYPE i.
+  DATA w_lenvalue TYPE i.
+  DATA w_field TYPE string.
+  DATA w_value TYPE string.
+  DATA i_table_desc TYPE sydes_desc.
+  DATA w_type TYPE sydes_typeinfo.
+
+  FIELD-SYMBOLS &lt;champ&gt; TYPE ANY.
+  FIELD-SYMBOLS &lt;table&gt; TYPE STANDARD TABLE.
+
+  w_pos_deb_nom = 2.
+  WHILE p_json+w_pos_fin_val CS &apos;&quot;:&apos;.
+    w_pos_fin_nom = w_pos_fin_val + sy-fdpos.
+    w_pos_deb_val = w_pos_fin_nom + 2.
+    PERFORM get_offset_close USING p_json w_pos_deb_val CHANGING w_pos_fin_val.
+    w_lenfield = w_pos_fin_nom - w_pos_deb_nom.
+    w_field = p_json+w_pos_deb_nom(w_lenfield).
+    CONCATENATE &apos;p_struc-&apos; w_field INTO w_field.
+    w_lenvalue = w_pos_fin_val - w_pos_deb_val.
+    w_value = p_json+w_pos_deb_val(w_lenvalue).
+    ASSIGN (w_field) TO &lt;champ&gt;. &quot;if sy-subrc &lt;&gt; 0 that mean: field don&apos;t exist in the structure
+    IF sy-subrc EQ 0.
+      DESCRIBE FIELD &lt;champ&gt; INTO i_table_desc.
+      READ TABLE i_table_desc-types INTO w_type INDEX 1.
+      CASE w_type-table_kind.
+        WHEN &apos;T&apos;.
+          ASSIGN (w_field) TO &lt;table&gt;.
+          REFRESH &lt;table&gt;.
+          CALL FUNCTION &apos;Z_JSON_IN&apos;
+            EXPORTING
+              json = w_value
+            TABLES
+              itab = &lt;table&gt;.
+          &lt;champ&gt; = &lt;table&gt;.
+        WHEN OTHERS.
+          CALL FUNCTION &apos;Z_JSON_IN&apos;
+            EXPORTING
+              json  = w_value
+            IMPORTING
+              struc = &lt;champ&gt;.
+      ENDCASE.
+*     w_pos_deb_nom = w_pos_fin_val + 2. &quot;YOA11072008
+    ENDIF.
+    w_pos_deb_nom = w_pos_fin_val + 2. &quot;YOA11072008
+  ENDWHILE.
+
+ENDFORM.                    &quot;json_to_struc
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  json_to_itab
+*&amp;---------------------------------------------------------------------*
+FORM json_to_itab TABLES p_itab USING p_json.
+
+  DATA w_pos_deb_line TYPE i.
+  DATA w_pos_fin_line TYPE i.
+  DATA w_lenline TYPE i.
+  DATA w_line TYPE string.
+
+  CLEAR p_itab. &quot;ADDING CBO
+  REFRESH p_itab. &quot;ADDING CBO
+  WHILE p_json+w_pos_fin_line CS &apos;{&apos;.
+    CLEAR p_itab. &quot;ADDING CBO
+    w_pos_deb_line = w_pos_fin_line + sy-fdpos.
+    PERFORM get_offset_close USING p_json w_pos_deb_line CHANGING w_pos_fin_line.
+    w_lenline = w_pos_fin_line - w_pos_deb_line.
+    w_line = p_json+w_pos_deb_line(w_lenline).
+    PERFORM json_to_struc USING w_line CHANGING p_itab.
+    APPEND p_itab TO p_itab.
+  ENDWHILE.
+
+ENDFORM.                    &quot;json_to_itab
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  json_to_array
+*&amp;---------------------------------------------------------------------*
+FORM json_to_array TABLES p_itab USING p_json.
+
+  DATA w_pos_deb_val TYPE i.
+  DATA w_pos_fin_val TYPE i.
+  DATA w_pos_deb_lit TYPE i.
+  DATA w_lenvalue TYPE i.
+  DATA w_field TYPE string.
+  DATA w_value TYPE string.
+
+  FIELD-SYMBOLS &lt;champ&gt; TYPE ANY.
+
+  REFRESH p_itab. &quot;ADDING CBO : a little clear and refresh to avoid getting the last values
+  WHILE p_json+w_pos_fin_val CS &apos;&quot;&apos;.
+    CLEAR p_itab.&quot;ADDING CBO
+    w_pos_deb_val = sy-fdpos + w_pos_fin_val.
+    PERFORM get_offset_close USING p_json w_pos_deb_val CHANGING w_pos_fin_val.
+    w_lenvalue = w_pos_fin_val - w_pos_deb_val.
+    w_value = p_json+w_pos_deb_val(w_lenvalue).
+    CALL FUNCTION &apos;Z_JSON_IN&apos;
+      EXPORTING
+        json  = w_value
+      IMPORTING
+        struc = p_itab.
+    APPEND p_itab TO p_itab.
+    w_pos_fin_val = w_pos_fin_val + 1.
+  ENDWHILE.
+
+ENDFORM.                    &quot;json_to_array
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  get_offset_close
+*&amp;---------------------------------------------------------------------*
+FORM get_offset_close USING p_json p_offset_open CHANGING p_offset_close.
+
+  DATA w_offset TYPE i.
+  DATA w_copen TYPE c.
+  DATA w_cclose TYPE c.
+  DATA w_pos_echap TYPE i.
+  DATA i_result_tabopen TYPE match_result_tab.
+  DATA w_result_tabopen TYPE LINE OF match_result_tab.
+  DATA i_result_tabclose TYPE match_result_tab.
+  DATA w_result_tabclose TYPE LINE OF match_result_tab.
+  DATA w_offsetclose_old TYPE i.
+
+  CONSTANTS : c_echap TYPE c VALUE &apos;\&apos;.
+
+  w_copen = p_json+p_offset_open(1).
+  CASE w_copen.
+    WHEN &apos;&quot;&apos;. w_cclose = &apos;&quot;&apos;.
+    WHEN &apos;{&apos;. w_cclose = &apos;}&apos;.
+    WHEN &apos;[&apos;. w_cclose = &apos;]&apos;.
+  ENDCASE.
+  w_offset = p_offset_open + 1.
+  IF w_copen EQ &apos;&quot;&apos;.
+    FIND ALL OCCURRENCES OF w_cclose IN p_json+w_offset RESULTS i_result_tabclose.
+    LOOP AT i_result_tabclose INTO w_result_tabclose.
+      w_pos_echap = w_offset + w_result_tabclose-offset - 1.
+      CHECK p_json+w_pos_echap(1) NE c_echap.
+      EXIT.
+    ENDLOOP.
+    p_offset_close = w_offset + w_result_tabclose-offset + 1. &quot;CBO due to change in the else statement
+  ELSE.
+    FIND ALL OCCURRENCES OF w_copen IN p_json+w_offset RESULTS i_result_tabopen.
+    PERFORM nettoyage TABLES i_result_tabopen USING p_json w_offset.
+    FIND ALL OCCURRENCES OF w_cclose IN p_json+w_offset RESULTS i_result_tabclose.
+    PERFORM nettoyage TABLES i_result_tabclose USING p_json w_offset.
+
+*    LOOP AT i_result_tabclose INTO w_result_tabclose.
+*      LOOP AT i_result_tabopen INTO w_result_tabopen WHERE offset BETWEEN w_offsetclose_old AND w_result_tabclose-offset.
+*        EXIT.
+*      ENDLOOP.
+*      w_offsetclose_old = w_result_tabclose-offset.
+*      CHECK sy-subrc NE 0.
+*      EXIT.
+*    ENDLOOP.
+
+*   CHANGING CBO : We look to the first close where no open is set before
+*                by removing each open corresponding of each close
+    DATA w_last_idx LIKE sy-tabix.
+    LOOP AT i_result_tabclose INTO w_result_tabclose.
+      CLEAR: w_result_tabopen.
+      w_last_idx = -1.
+      LOOP AT i_result_tabopen INTO w_result_tabopen WHERE offset BETWEEN 0 AND w_result_tabclose-offset.
+        w_last_idx = sy-tabix.
+      ENDLOOP.
+      IF NOT w_last_idx = -1 .
+        DELETE i_result_tabopen INDEX w_last_idx.
+      ELSE.
+        p_offset_close = w_offset + w_result_tabclose-offset + 1.
+        EXIT.
+      ENDIF.
+    ENDLOOP.
+
+  ENDIF.
+*  p_offset_close = w_offset + w_result_tabclose-offset + 1.
+ENDFORM.                    &quot;get_offset_close
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  nettoyage
+*&amp;---------------------------------------------------------------------*
+FORM nettoyage TABLES i_tab USING p_json p_offset.
+
+  DATA w_tab TYPE LINE OF match_result_tab.
+  DATA w_len TYPE i.
+  DATA i_result_tabguillemet TYPE match_result_tab.
+  DATA w_result_tabguillemet TYPE LINE OF match_result_tab.
+  DATA w_pos_echap TYPE i.
+  DATA w_count TYPE i.
+  DATA w_parite TYPE p DECIMALS 1.
+
+  CONSTANTS : c_echap TYPE c VALUE &apos;\&apos;.
+
+  LOOP AT i_tab INTO w_tab.
+    FIND ALL OCCURRENCES OF &apos;&quot;&apos; IN p_json+p_offset(w_tab-offset) RESULTS i_result_tabguillemet.
+    CLEAR w_count.
+    LOOP AT i_result_tabguillemet INTO w_result_tabguillemet WHERE offset LT w_tab-offset.
+      w_pos_echap = p_offset + w_result_tabguillemet-offset - 1.
+      CHECK p_json+w_pos_echap(1) NE c_echap.
+      w_count = w_count + 1.
+    ENDLOOP.
+    w_parite = FRAC( w_count / 2 ).
+    CHECK w_parite IS NOT INITIAL.
+    DELETE i_tab.
+  ENDLOOP.
+
+ENDFORM.                    &quot;nettoyage</fm_source_new>
+   </functionmodule>
+   <functionmodule NAME="Z_JSON_OBJET" STEXT="Créer objet json">
+    <importing PARAMETER="ENT" REFERENCE="X" TYP="STRING"/>
+    <importing PARAMETER="TBL" REFERENCE="X" TYP="ZGY_0004"/>
+    <exporting PARAMETER="RET" REFERENCE="X" TYP="STRING"/>
+    <documentation PARAMETER="ENT" KIND="P" INDEX=" 001"/>
+    <documentation PARAMETER="TBL" KIND="P" STEXT="Table JSON OBJET" INDEX=" 002"/>
+    <documentation PARAMETER="RET" KIND="P" INDEX=" 003"/>
+    <fm_source>DATA w_tbl TYPE zgs_0004.
+  DATA w_sep.
+  DATA w_lng TYPE i.
+
+  CONCATENATE &apos;&quot;&apos; ent &apos;&quot;:{&apos; INTO ret.
+  DESCRIBE TABLE tbl LINES w_lng.
+
+  LOOP AT tbl INTO w_tbl.
+    CONCATENATE ret &apos;&quot;&apos; w_tbl-id &apos;&quot;:&quot;&apos; w_tbl-tx &apos;&quot;&apos; INTO ret.
+    IF sy-tabix &lt; w_lng.
+      CONCATENATE ret &apos;,&apos; INTO ret.
+    ENDIF.
+  ENDLOOP.
+
+  CONCATENATE ret &apos;}&apos; INTO ret.
+
+*+---------------------------------------------------------------------
+FORM pf_objadd USING p_id p_tx i_tbl TYPE zgy_0004.
+*+-------------------------------------------------------------------
+  DATA w_tbl TYPE zgs_0004.
+
+  w_tbl-id = p_id.
+  w_tbl-tx = p_tx.
+  APPEND w_tbl TO i_tbl.
+
+ENDFORM.                    &quot;pf_json_objet_add
+*+---------------------------------------------------------------------
+FORM pf_json_begin USING p_id p_ret.
+*+-------------------------------------------------------------------
+
+  CONCATENATE p_ret &apos;{&apos; INTO p_ret.
+
+ENDFORM.
+*+---------------------------------------------------------------------
+FORM pf_json_end USING p_id p_ret.
+*+-------------------------------------------------------------------
+
+  CONCATENATE p_ret &apos;}&apos; INTO p_ret.
+
+ENDFORM.
+*+---------------------------------------------------------------------
+FORM pf_json_sep USING p_id p_ret.
+*+-------------------------------------------------------------------
+
+  CONCATENATE p_ret &apos;,&apos; INTO p_ret.
+
+ENDFORM.
+*+---------------------------------------------------------------------
+FORM pf_json_open USING p_id p_ret.
+*+-------------------------------------------------------------------
+
+  CONCATENATE p_ret &apos;&quot;&apos; p_id &apos;&quot;:{&apos; INTO p_ret.
+
+ENDFORM.
+*+---------------------------------------------------------------------
+FORM pf_json_add USING p_id p_txt p_ret.
+*+-------------------------------------------------------------------
+
+  CONCATENATE p_ret &apos;&quot;&apos; p_id &apos;&quot;:&quot;&apos; p_txt &apos;&quot;&apos; INTO p_ret.
+
+ENDFORM.</fm_source>
+   </functionmodule>
+   <functionmodule NAME="Z_JSON_FORMATER_VALUE" STEXT="Formater la valeur du champ">
+    <changing PARAMETER="STR" REFERENCE="X" TYP="ANY"/>
+    <documentation PARAMETER="STR" KIND="P" INDEX=" 001"/>
+    <fm_source_new>REPLACE ALL OCCURRENCES OF cl_abap_char_utilities=&gt;cr_lf IN str WITH &apos;\n&apos;.
+
+* OH OH... en entrée il peut déjà y avoir \&quot; et dans ce cas il deviendrait \\&quot; donc on défait et refait.
+  REPLACE ALL OCCURRENCES OF &apos;\&quot;&apos; IN str WITH &apos;&quot;&apos;.
+  REPLACE ALL OCCURRENCES OF &apos;&quot;&apos; IN str WITH &apos;\&quot;&apos;.</fm_source_new>
+   </functionmodule>
+   <functionmodule NAME="Z_JSON_DEFORMATER_VALUE" STEXT="Déformater la valeur du champ">
+    <changing PARAMETER="STR" REFERENCE="X"/>
+    <documentation PARAMETER="STR" KIND="P" INDEX=" 001"/>
+    <fm_source_new>DATA: elemdescr TYPE REF TO cl_abap_elemdescr.
+* Description of element
+  elemdescr ?= cl_abap_elemdescr=&gt;describe_by_data( STR ).
+
+  CHECK elemdescr-&gt;TYPE_KIND &lt;&gt; &apos;P&apos; and elemdescr-&gt;TYPE_KIND &lt;&gt; &apos;I&apos;.
+
+  REPLACE ALL OCCURRENCES OF &apos;\n&apos; IN str WITH cl_abap_char_utilities=&gt;cr_lf.
+
+  REPLACE ALL OCCURRENCES OF &apos;\&quot;&apos; IN str WITH &apos;&quot;&apos;.</fm_source_new>
+   </functionmodule>
+   <functionmodule NAME="Z_JSON_COMPIL_JSONS" STEXT="Compilation de plusieurs JSONs">
+    <exporting PARAMETER="JSON" REFERENCE="X" TYP="STRING"/>
+    <tables PARAMETER="JSONS" TYP="ZGY_0004"/>
+    <documentation PARAMETER="JSON" KIND="P" INDEX=" 001"/>
+    <documentation PARAMETER="JSONS" KIND="P" STEXT="Table JSON OBJET" INDEX=" 002"/>
+    <fm_source>DATA w_jsons TYPE zgs_0004.
+  CLEAR json.
+
+  LOOP AT jsons INTO w_jsons.
+
+    CONCATENATE json &apos;,&quot;&apos; w_jsons-id &apos;&quot;:&apos; w_jsons-tx INTO json.
+
+  ENDLOOP.
+
+  SHIFT json.
+
+  CONCATENATE  &apos;{&apos; json &apos;}&apos; INTO json.</fm_source>
+   </functionmodule>
+  </functionmodules>
+ </FUGR>
+</nugget>
